@@ -1,1 +1,163 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>ハチャメチャライド風ゲーム</title>
+<style>
+    body {
+        margin: 0;
+        overflow: hidden;
+        background: linear-gradient(#87ceeb, #fff);
+        font-family: sans-serif;
+        text-align: center;
+    }
 
+    canvas {
+        background: #fef08a;
+        display: block;
+        margin: 0 auto;
+        border: 5px solid #ffcc00;
+        border-radius: 10px;
+    }
+
+    h1 {
+        color: #ff69b4;
+    }
+</style>
+</head>
+<body>
+
+<h1>🎢 ハチャメチャライド風ゲーム 🎢</h1>
+<p>← →キーで移動！バナナを取って、障害物を避けよう！</p>
+<canvas id="gameCanvas" width="400" height="600"></canvas>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+let player = {
+    x: 180,
+    y: 500,
+    width: 40,
+    height: 40,
+    speed: 6
+};
+
+let bananas = [];
+let obstacles = [];
+let score = 0;
+let gameOver = false;
+
+// キー操作
+let keys = {};
+document.addEventListener("keydown", e => keys[e.key] = true);
+document.addEventListener("keyup", e => keys[e.key] = false);
+
+// オブジェクト生成
+function spawnObjects() {
+    if (Math.random() < 0.05) {
+        bananas.push({
+            x: Math.random() * 360,
+            y: -20,
+            size: 20
+        });
+    }
+
+    if (Math.random() < 0.03) {
+        obstacles.push({
+            x: Math.random() * 360,
+            y: -20,
+            size: 30
+        });
+    }
+}
+
+// 更新処理
+function update() {
+    if (gameOver) return;
+
+    // 移動
+    if (keys["ArrowLeft"]) player.x -= player.speed;
+    if (keys["ArrowRight"]) player.x += player.speed;
+
+    player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
+
+    // オブジェクト生成
+    spawnObjects();
+
+    // バナナ更新
+    bananas.forEach(b => b.y += 4);
+    obstacles.forEach(o => o.y += 5);
+
+    // 衝突判定
+    bananas = bananas.filter(b => {
+        if (collision(player, b)) {
+            score++;
+            return false;
+        }
+        return b.y < canvas.height;
+    });
+
+    obstacles.forEach(o => {
+        if (collision(player, o)) {
+            gameOver = true;
+        }
+    });
+
+    obstacles = obstacles.filter(o => o.y < canvas.height);
+}
+
+// 衝突判定
+function collision(a, b) {
+    return a.x < b.x + b.size &&
+           a.x + a.width > b.x &&
+           a.y < b.y + b.size &&
+           a.y + a.height > b.y;
+}
+
+// 描画
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // プレイヤー
+    ctx.fillStyle = "#ffd700";
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+
+    // バナナ
+    ctx.fillStyle = "yellow";
+    bananas.forEach(b => {
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.size / 2, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    // 障害物
+    ctx.fillStyle = "red";
+    obstacles.forEach(o => {
+        ctx.fillRect(o.x, o.y, o.size, o.size);
+    });
+
+    // スコア
+    ctx.fillStyle = "#000";
+    ctx.font = "20px sans-serif";
+    ctx.fillText("スコア: " + score, 10, 30);
+
+    if (gameOver) {
+        ctx.fillStyle = "#000";
+        ctx.font = "30px sans-serif";
+        ctx.fillText("ゲームオーバー！", 80, 300);
+    }
+}
+
+// ループ
+function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+
+</body>
+</html>
